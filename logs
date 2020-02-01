@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#for centos /Red hat 
+# thanks John forde for this script help for logs 
+# Edited by Javier Flores 
+
+#grabs the end of the kernal log
+tail /var/log/dmesg
+uname -mrs
+
+#grabs the end of the secure(aka SSH) log
+tail /var/log/secure
+
+#grabs the end of the boot logs
+tail /var/log/boot.log
+
+#grab the end of the CRON log
+tail /var/log/cron
+
+#grab the end of the YUM log
+tail /var/log/yum.log
+
+#grabs the mail server logs
+/var/log/maillog or /var/log/mail.log
+
+#grab the end of the apache logs
+tail var/log/httpd/access_log
+tail var/log/httpd/error_log
+
+#grabs the end of the MYSQL logs
+Tail /var/log/mysqld.log
+ or 
+Tail /var/log/mysql.log
