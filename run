@@ -170,6 +170,12 @@ rm -f /var/lib/rpm/__db*
 rpm --rebuilddb
 yum update
 Fast mirror error: add enable=0 to /etc/yum/pluginconf.d/fastestmirror.conf
+vi /etc/yum/pluginconf.d/fastestmirror.conf
+If you are currently in insert or append mode, press Esc key.
+Press : (colon)
+Enter the following command (type :x and press Enter key): :x
+Press ENTER key.
+This will quit the editor, and all changes you have made to the document will be saved to the file.
 Correct base repo file: /etc/yum.repos.d/CentOS-Base.repo
 Git: /linux/yum_base_repo
 # CentOS-Base.repo
