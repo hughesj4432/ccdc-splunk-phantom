@@ -1,0 +1,232 @@
+Cent-OS 6.0 E-comm Playbook
+By Matthew Pomes, for the CCDC 2020 season
+Package manager: Yum
+Web Application Stack: LAMP (Linux, Apache, MySQL, PHP)
+MySQL is on the Debian MySQL server
+Firewalls: iptables, mod_security, fail2ban
+
+This document is a playbook for the Cent-OS 6.0 box. Many of the commands are specific to Cent-OS, but almost all of the concepts and steps are applicable to every box. IP addresses, services and ports are also specific to this box. A full list of relevant information can be found in team pack, on the google drive. This document is best effort, and is almost certainly not complete.
+Notes
+Shell snippets and files are in gray, like this
+Warnings are in red, like this
+Clone from Git: use curl, all URLs start with: https://raw.githubusercontent.com/the10thWiz/CCDC-UWStout/master
+All ‘attached files’ are in the same folder as this document
+Plan of Action
+Passwords and Accounts
+Fix Repository and install needed software
+Nic: off until firewall
+Check Logs
+Find rogue accounts, services, groups, etc
+Watch for potential issues
+Accounts:
+Set password: passwd [user]
+Add user: useradd {user} [groups...]
+Remove user: deluser {user} 
+User
+Default password
+New password
+Groups
+root
+!Password123
+jaklC8AF9rR3d@jQnIu-oca8
+
+
+admin
+
+
+dan like marrow virgilia
+sudo
+Repository
+Check: yum check will find issues with repositories
+Remove non-critical packages
+Install useful packages: mod_security, fail2ban, screen, ?iptables-persistent?
+Firewall
+Configure iptables
+Disable interfaces: ifdown {if}
+IP address: 172.20.241.30
+Check running ports: netstat -nat, ss or lsof -nP
+Port
+Service
+IPs
+Traffic Type
+80
+HTTP
+Any
+TCP
+443
+HTTPS
+Any
+TCP
+3306
+MySQL
+172.20.240.20
+?
+3307
+MySQL
+172.20.240.20
+?
+123
+NTP
+?
+UDP
+?
+Splunky
+172.20.241.20
+?
+Checking Logs
+Use tail to grab the end, tail -F to watch the log
+Kernel: /var/log/dmesg
+Kernel Info: uname -mrs
+SSH: /var/log/secure
+Boot: /var/log/boot.log
+Cron: /var/log/cron
+Yum: /var/log/yum.log
+Mail: /var/log/maillog or /var/log/mail.log
+Apache access: /var/log/httpd/*_log
+Mod Security: /var/log/https/modsec_*.log
+MySQL: /var/log/mysqld.log or /var/log/mysql.log
+TCP: tcpdump
+Checking Processes
+See running processes: top
+Kill process: kill {pid}, killall {name} or kill -9 {pid}
+
+Webapp Firewall
+Script to apply iptable firewall rules
+Git: /linux/firewall_ecomm
+#!/bin/sh
+
+# Empty all rules
+sudo iptables -t filter -F
+sudo iptables -t filter -X
+
+# Block everything by default
+sudo iptables -t filter -P INPUT DROP
+sudo iptables -t filter -P FORWARD DROP
+sudo iptables -t filter -P OUTPUT DROP
+
+# Authorize already established connections
+sudo iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -t filter -A INPUT -i lo -j ACCEPT
+sudo iptables -t filter -A OUTPUT -o lo -j ACCEPT
+
+# ICMP (Ping)
+sudo iptables -t filter -A INPUT -p icmp -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p icmp -j ACCEPT
+
+# DNS (Needed for curl?)
+sudo iptables -t filter -A OUTPUT -p tcp --dport 53 -j ACCEPT
+sudo iptables -t filter -A OUTPUT -p udp --dport 53 -j ACCEPT
+sudo iptables -t filter -A INPUT -p tcp --dport 53 -j ACCEPT
+sudo iptables -t filter -A INPUT -p udp --dport 53 -j ACCEPT
+
+# HTTP (apache)
+sudo iptables -t filter -A OUTPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -t filter -A INPUT -p tcp --dport 80 -j ACCEPT
+
+# HTTPS (apache)
+sudo iptables -t filter -A OUTPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -t filter -A INPUT -p tcp --dport 443 -j ACCEPT
+
+# NTP (server time)
+sudo iptables -t filter -A OUTPUT -p udp --dport 123 -j ACCEPT
+
+
+Web application firewall, mod_security: There is a default config, needs to be renamed to /etc/modsecurity/modsecurity.conf.
+SecRuleEngine On: Set to blocking mode
+SecResponseBodyAccess On: Set to read responses
+SecRequestBodyLimit {limit: 13107200}: Limit Request size
+SecRequestBodyNoFilesLimit {limit: 131072}: Limit Request size
+Add to <IfModule security2_module> to include the Core Rule Set
+Include "/usr/share/modsecurity-crs/*.conf"
+Include "/usr/share/modsecurity-crs/activated_rules/*.conf"
+Fail2ban is a service to monitor and block TCP connections. Also has default conf, needs to be: /etc/fail2ban/jail.local
+Sections are by service, set enabled to true/false
+Under [DEFAULT]
+ignoreip = {ip/subnet}: can ignore specific IPs
+bantime = {secs}: Set the ban time, -1 = forever
+maxretry = {times}: Number of strikes
+findtime = {secs}: how long strikes last
+Under [apache]
+port = https,https
+filter = apache-auth
+Logpath = /var/log/apache*/*error.log
+banaction = iptables-multiport: Block all ports by IP
+Apache: Enable -overflows, -noscirpt if not PHP, -nohome if the server isn’t in a home directory, -badbots, php-url-fopen if PHP
+Filter configs are in /etc/fail2ban/filter.d/
+Restart fail2ban to reload config, fail2ban-client status to see whats loaded
+fail2ban-client status {service}: to see what is banned
+fail2ban-client set {service}unbanip {ip}: to unban IP
+
+
+
+Repositories:
+See attached command cheat sheet
+Restart service after update: sudo /etc/init.d/httpd restart
+Clean repository: yum clean all Run after any fix
+Fix database error: 
+yum clean all
+rm -f /var/lib/rpm/__db*
+rpm --rebuilddb
+yum update
+Fast mirror error: add enable=0 to /etc/yum/pluginconf.d/fastestmirror.conf
+Correct base repo file: /etc/yum.repos.d/CentOS-Base.repo
+Git: /linux/yum_base_repo
+# CentOS-Base.repo
+#
+# The mirror system uses the connecting IP address of the client and the
+# update status of each mirror to pick mirrors that are updated to and
+# geographically close to the client.  You should use this for CentOS updates
+# unless you are manually picking other mirrors.
+#
+# If the mirrorlist= does not work for you, as a fall back you can try the
+# remarked out baseurl= line instead.
+#
+#
+
+[base]
+name=CentOS-$releasever - Base
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os
+#baseurl=http://mirror.centos.org/centos/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+#released updates
+[updates]
+name=CentOS-$releasever - Updates
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=updates
+#baseurl=http://mirror.centos.org/centos/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+#additional packages that may be useful
+[extras]
+name=CentOS-$releasever - Extras
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=extras
+#baseurl=http://mirror.centos.org/centos/$releasever/extras/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+#additional packages that extend functionality of existing packages
+[centosplus]
+name=CentOS-$releasever - Plus
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=centosplus
+#baseurl=http://mirror.centos.org/centos/$releasever/centosplus/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+#contrib - packages by Centos Users
+[contrib]
+name=CentOS-$releasever - Contrib
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=contrib
+#baseurl=http://mirror.centos.org/centos/$releasever/contrib/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+
+
+
+
+
+
