@@ -131,6 +131,11 @@ sudo iptables -t filter -A INPUT -p tcp --dport 443 -j ACCEPT
 # NTP (server time)
 sudo iptables -t filter -A OUTPUT -p udp --dport 123 -j ACCEPT
 
+actual ports:
+defaults are
+9997 for forwarders to the Splunk indexer.
+8000 for clients to the Splunk Search page
+8089 for splunkd (also used by deployment server).
 
 Web application firewall, mod_security: There is a default config, needs to be renamed to /etc/modsecurity/modsecurity.conf.
 SecRuleEngine On: Set to blocking mode
