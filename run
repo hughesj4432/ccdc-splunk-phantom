@@ -158,7 +158,37 @@ Restart fail2ban to reload config, fail2ban-client status to see whats loaded
 fail2ban-client status {service}: to see what is banned
 fail2ban-client set {service}unbanip {ip}: to unban IP
 
+yum update fail
+ip addr
+if no address
+nmtui
+edit
+choose adapter
+automatic or configure
+x automatically connect
+quit
+quit
+network service restart
+ip addr
+if no address
+vi /etc/resolver.conf
+"nameserver 8.8.8.8"
 
+yum install nano
+yum install ifconfig
+if fails
+yum provides ifconfig
+yum install net-tools
+
+adduser admin
+usermod -aG wheel admin
+passwd admin
+chocolatecandycrunchypops
+
+adduser applecation
+usermod -aG wheel admin
+passwd admin
+chocolatecandycrunchypops
 
 Repositories:
 See attached command cheat sheet
