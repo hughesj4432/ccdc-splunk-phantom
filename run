@@ -177,7 +177,7 @@ Enter the following command (type :x and press Enter key): :x
 Press ENTER key.
 This will quit the editor, and all changes you have made to the document will be saved to the file.
 Correct base repo file: /etc/yum.repos.d/CentOS-Base.repo
-Git: /linux/yum_base_repo
+Git: hughesj4432/ccdc-splunk-phantom/centos-base
 # CentOS-Base.repo
 #
 # The mirror system uses the connecting IP address of the client and the
